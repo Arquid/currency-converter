@@ -16,3 +16,7 @@ export const CURRENCIES: Currency[] = [
   { code: "PLN", name: "Polish Złoty", flag: "🇵🇱" },
   { code: "BRL", name: "Brazilian Real", flag: "🇧🇷" },
 ];
+
+export function getCurrency(code: string) {
+  return CURRENCIES.find((c) => c.code === code) ?? CURRENCIES[0];
+}

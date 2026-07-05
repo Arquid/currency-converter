@@ -15,7 +15,7 @@ A real-time currency converter built with Vite, React and TypeScript. Exchange r
 ## Tech Stack
 
 - [Vite](https://vitejs.dev/) — build tool
-- [React 18](https://react.dev/) — UI framework
+- [React 19](https://react.dev/) — UI framework
 - [TypeScript](https://www.typescriptlang.org/) — type safety
 - [Frankfurter API](https://api.frankfurter.app) — exchange rates
 

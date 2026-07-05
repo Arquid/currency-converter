@@ -2,7 +2,7 @@ import { useState } from "react";
 import { CurrencySelect } from "./components/CurrencySelect";
 import { ConversionResult } from "./components/ConversionResult";
 import { useExchangeRate } from "./hooks/useExchangeRate";
-import { CURRENCIES } from "./utils/currencies";
+import { CURRENCIES, getCurrency } from "./utils/currencies";
 import { parseAmount, isValidAmount } from "./utils/format";
 import "./App.css";
 
@@ -13,8 +13,8 @@ export default function App() {
 
   const { rate, status, error, updatedAt, refresh } = useExchangeRate(from, to);
 
-  const fromCurrency = CURRENCIES.find((c) => c.code === from)!;
-  const toCurrency = CURRENCIES.find((c) => c.code === to)!;
+  const fromCurrency = getCurrency(from);
+  const toCurrency = getCurrency(to);
   const numericAmount = parseAmount(amount);
   const amountInvalid = !isValidAmount(amount) && amount !== "";
 
@@ -42,7 +42,7 @@ export default function App() {
 
         <div className="currency-row">
           <CurrencySelect value={from} onChange={setFrom} label="Starting currency" currencies={CURRENCIES} />
-          <button className="swap-btn" onClick={() => { setFrom(to); setTo(from); }} aria-label="Change">⇄</button>
+          <button className="swap-btn" onClick={() => { setFrom(to); setTo(from); }} aria-label="Swap currencies">⇄</button>
           <CurrencySelect value={to} onChange={setTo} label="Target currency" currencies={CURRENCIES} />
         </div>
       </div>

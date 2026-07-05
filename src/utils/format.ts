@@ -1,9 +1,11 @@
 export function formatCurrency(value: number, currencyCode: string): string {
+  const isJPY = currencyCode === 'JPY';
+
   return new Intl.NumberFormat('fi-FI', {
     style: 'currency',
     currency: currencyCode,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: currencyCode === 'JPY' ? 0 : 4,
+    minimumFractionDigits: isJPY ? 0 : 2,
+    maximumFractionDigits: isJPY ? 0 : 4,
   }).format(value);
 }
 
