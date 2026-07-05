@@ -207,6 +207,11 @@ body {
   background: var(--danger-light);
 }
 
+.result-box--refreshing {
+  opacity: 0.6 !important;
+  transition: opacity 0.15s;
+}
+
 .result-meta {
   font-size: 13px;
   color: var(--text-muted);

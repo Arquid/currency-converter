@@ -3,13 +3,14 @@ import { formatCurrency } from "../utils/format";
 
 interface Props {
   state: ConversionState;
+  isRefreshing: boolean;
   amount: number;
   from: Currency;
   to: Currency;
   onRefresh: () => void;
 }
 
-export function ConversionResult({ state, amount, from, to, onRefresh}: Props) {
+export function ConversionResult({ state, isRefreshing, amount, from, to, onRefresh}: Props) {
   const { rate, status, error, updatedAt} = state;
 
   if (status === 'loading') {
@@ -30,13 +31,15 @@ export function ConversionResult({ state, amount, from, to, onRefresh}: Props) {
   }
 
   return (
-    <div className="result-box result-box--success">
+    <div className={`result-box result-box--success${isRefreshing ? " result-box--refreshing" : ""}`}>
       <p className="result-from">{from.flag} {formatCurrency(amount, from.code)}</p>
       <p className="result-to">{to.flag} {formatCurrency(amount * rate, to.code)}</p>
       <div className="result-footer">
         <span className="result-rate">1 {from.code} = {rate.toFixed(4)} {to.code}</span>
         {updatedAt && (
-          <button className="refresh-btn" onClick={onRefresh}>↻ {updatedAt}</button>
+          <button className="refresh-btn" onClick={onRefresh} disabled={isRefreshing}>
+            {isRefreshing ? "↻ Updating…" : `↻ ${updatedAt}`}
+          </button>
         )}
       </div>
     </div>

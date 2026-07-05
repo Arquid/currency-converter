@@ -11,7 +11,7 @@ export default function App() {
   const [from, setFrom] = useState<string>("EUR");
   const [to, setTo] = useState<string>("USD");
 
-  const { rate, status, error, updatedAt, refresh } = useExchangeRate(from, to);
+  const { rate, status, error, updatedAt, isRefreshing, refresh } = useExchangeRate(from, to);
 
   const fromCurrency = getCurrency(from);
   const toCurrency = getCurrency(to);
@@ -49,6 +49,7 @@ export default function App() {
 
       <ConversionResult
         state={{ rate, status, error, updatedAt }}
+        isRefreshing={isRefreshing}
         amount={numericAmount}
         from={fromCurrency}
         to={toCurrency}
