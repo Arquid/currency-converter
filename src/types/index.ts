@@ -11,6 +11,19 @@ export interface ExchangeRateResponse {
   rates: Record<string, number>;
 }
 
+export interface ExchangeRateHistoryResponse {
+  amount: number;
+  base: string;
+  start_date: string;
+  end_date: string;
+  rates: Record<string, Record<string, number>>;
+}
+
+export interface RateHistoryPoint {
+  date: string;
+  rate: number;
+}
+
 export type ConversionStatus = 'idle' | 'loading' | 'success' | 'error';
 
 export interface ConversionState {

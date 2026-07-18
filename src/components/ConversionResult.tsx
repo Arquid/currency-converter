@@ -1,5 +1,6 @@
-import type { ConversionState, Currency } from "../types";
+import type { ConversionState, Currency, RateHistoryPoint } from "../types";
 import { formatCurrency } from "../utils/format";
+import { RateSparkline } from "./RateSparkline";
 
 interface Props {
   state: ConversionState;
@@ -8,10 +9,11 @@ interface Props {
   from: Currency;
   to: Currency;
   onRefresh: () => void;
+  history: RateHistoryPoint[];
 }
 
-export function ConversionResult({ state, isRefreshing, amount, from, to, onRefresh}: Props) {
-  const { rate, status, error, updatedAt} = state;
+export function ConversionResult({ state, isRefreshing, amount, from, to, onRefresh, history }: Props) {
+  const { rate, status, error, updatedAt } = state;
 
   if (status === 'loading') {
     return <div className='result-box'><p className='result-meta'>Fetching currency...</p></div>;
@@ -42,6 +44,7 @@ export function ConversionResult({ state, isRefreshing, amount, from, to, onRefr
           </button>
         )}
       </div>
+      <RateSparkline points={history} fromCode={from.code} toCode={to.code} />
     </div>
   );
 }

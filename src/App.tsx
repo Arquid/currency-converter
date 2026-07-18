@@ -2,6 +2,7 @@ import { useState } from "react";
 import { CurrencySelect } from "./components/CurrencySelect";
 import { ConversionResult } from "./components/ConversionResult";
 import { useExchangeRate } from "./hooks/useExchangeRate";
+import { useRateHistory } from "./hooks/useRateHistory";
 import { CURRENCIES, getCurrency } from "./utils/currencies";
 import { parseAmount, isValidAmount } from "./utils/format";
 import "./App.css";
@@ -12,6 +13,7 @@ export default function App() {
   const [to, setTo] = useState<string>("USD");
 
   const { rate, status, error, updatedAt, isRefreshing, refresh } = useExchangeRate(from, to);
+  const { points: history } = useRateHistory(from, to);
 
   const fromCurrency = getCurrency(from);
   const toCurrency = getCurrency(to);
@@ -54,6 +56,7 @@ export default function App() {
         from={fromCurrency}
         to={toCurrency}
         onRefresh={refresh}
+        history={history}
       />
     </main>
   );
