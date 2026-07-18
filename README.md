@@ -1,5 +1,7 @@
 # Currency Converter
 
+[![CI](https://github.com/Arquid/currency-converter/actions/workflows/ci.yml/badge.svg)](https://github.com/Arquid/currency-converter/actions/workflows/ci.yml)
+
 A real-time currency converter built with Vite, React and TypeScript. Exchange rates are fetched from the [Frankfurter API](https://api.frankfurter.app) — free, no API key required.
 
 ## Features
@@ -7,6 +9,7 @@ A real-time currency converter built with Vite, React and TypeScript. Exchange r
 - Real-time exchange rates (European Central Bank data)
 - 14 currencies supported
 - Swap currencies with one click
+- Rate history sparkline
 - Input validation with error messages
 - Manual rate refresh
 - Dark mode support
@@ -27,10 +30,14 @@ src/
 ├── components/
 │   ├── CurrencySelect.tsx    # Currency dropdown
 │   ├── ConversionResult.tsx  # Result display
-│   └── ErrorBoundary.tsx     # Top-level crash guard
+│   ├── ErrorBoundary.tsx     # Top-level crash guard
+│   ├── RateSparkline.tsx     # 30-day rate history chart
+│   └── RateSparkline.test.tsx
 ├── hooks/
-│   ├── useExchangeRate.ts       # API logic & state
-│   └── useExchangeRate.test.ts
+│   ├── useExchangeRate.ts    # API logic & state
+│   ├── useExchangeRate.test.ts
+│   ├── useRateHistory.ts     # Rate history for the sparkline
+│   └── useRateHistory.test.ts
 ├── types/
 │   └── index.ts              # Shared TypeScript types
 ├── utils/
