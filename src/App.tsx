@@ -1,16 +1,23 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { CurrencySelect } from "./components/CurrencySelect";
 import { ConversionResult } from "./components/ConversionResult";
 import { useExchangeRate } from "./hooks/useExchangeRate";
 import { useRateHistory } from "./hooks/useRateHistory";
 import { CURRENCIES, getCurrency } from "./utils/currencies";
 import { parseAmount, isValidAmount } from "./utils/format";
+import { readStateFromUrl, writeStateToUrl } from "./utils/url";
 import "./App.css";
 
+const urlState = readStateFromUrl(window.location.search);
+
 export default function App() {
-  const [amount, setAmount] = useState<string>("100");
-  const [from, setFrom] = useState<string>("EUR");
-  const [to, setTo] = useState<string>("USD");
+  const [amount, setAmount] = useState<string>(urlState.amount ?? "100");
+  const [from, setFrom] = useState<string>(urlState.from ?? "EUR");
+  const [to, setTo] = useState<string>(urlState.to ?? "USD");
+
+  useEffect(() => {
+    writeStateToUrl({ amount, from, to });
+  }, [amount, from, to]);
 
   const { rate, status, error, updatedAt, isRefreshing, refresh } = useExchangeRate(from, to);
   const { points: history } = useRateHistory(from, to);
