@@ -24,7 +24,7 @@ The current amount and currency pair are always reflected in the URL, so you can
 /?amount=250&from=USD&to=JPY
 ```
 
-- `amount`: a non-negative number, with a dot or a comma as the decimal separator (thousands separators are not supported, see [Known Limitations](#known-limitations))
+- `amount`: a non-negative number, with a dot or a comma as the decimal separator. Spaces are ignored, so `1 000` means 1000
 - `from`, `to`: one of the supported currency codes listed above, in uppercase (for example `USD`; `usd` is ignored)
 
 Each missing or invalid parameter falls back to its default (`100`, `EUR` and `USD`).
@@ -139,7 +139,7 @@ When you deploy, make your host forward `/api/*` to the Frankfurter API, so that
 
 ## Known Limitations
 
-- **Amount format**: only a plain number is understood, with a dot or a comma as the decimal separator. Group separators are not rejected, they are misread: `1 000`, `1,000.50` and `1.000,50` are all read as `1`, and `12abc` is read as `12`. Type `1000` or `1000.50` instead. A negative amount shows the validation error but is still converted.
+- **Amount format**: only a plain number is accepted. Grouped numbers with commas or dots, such as `1,000.50` or `1.000,50`, are rejected instead of guessed, because their meaning is ambiguous. Type `1000.50` instead. Other input, such as `12abc`, `1e3` or a negative number, also shows the validation error and no conversion.
 - **Number format**: amounts and currency symbols are always formatted with the Finnish (`fi-FI`) locale, whatever the browser language is. For example `114,48 $` and `100,00 INR`.
 - **Rate precision**: the rate line shows four decimals, so a small rate is rounded coarsely (`1 JPY = 0.0056 EUR`), while the converted amount is calculated from the exact rate.
 - **Slow API**: requests have no timeout. If the API never answers, the app stays on `Fetching currency...` until you reload the page.

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 
 vi.mock("./hooks/useExchangeRate", () => ({
   useExchangeRate: () => ({
@@ -71,5 +71,55 @@ describe("App URL sync", () => {
     await vi.waitFor(() => {
       expect(new URLSearchParams(window.location.search).get("to")).toBe("GBP");
     });
+  });
+});
+
+describe("App amount input", () => {
+  beforeEach(() => {
+    vi.resetModules();
+    window.history.replaceState(null, "", "/");
+  });
+
+  async function renderApp() {
+    const { default: App } = await import("./App");
+    render(<App />);
+    return screen.getByLabelText("Amount");
+  }
+
+  it("reads a space as a thousands separator instead of silently converting 1 (regression)", async () => {
+    const amount = await renderApp();
+
+    fireEvent.change(amount, { target: { value: "1 000" } });
+
+    expect(screen.queryByText("Please enter a valid number.")).not.toBeInTheDocument();
+    expect(screen.getByText(/1 000,00/)).toBeInTheDocument();
+  });
+
+  it("shows the error and no conversion for a negative amount (regression: the result was still shown)", async () => {
+    const amount = await renderApp();
+
+    fireEvent.change(amount, { target: { value: "-5" } });
+
+    expect(screen.getByText("Please enter a valid number.")).toBeInTheDocument();
+    expect(screen.getByText("Enter the amount for conversion")).toBeInTheDocument();
+    expect(screen.queryByText(/[−-]5,/)).not.toBeInTheDocument();
+  });
+
+  it("rejects an ambiguous grouped number rather than guessing", async () => {
+    const amount = await renderApp();
+
+    fireEvent.change(amount, { target: { value: "1,000.50" } });
+
+    expect(screen.getByText("Please enter a valid number.")).toBeInTheDocument();
+    expect(screen.getByText("Enter the amount for conversion")).toBeInTheDocument();
+  });
+
+  it("does not show the error while the field is empty", async () => {
+    const amount = await renderApp();
+
+    fireEvent.change(amount, { target: { value: "" } });
+
+    expect(screen.queryByText("Please enter a valid number.")).not.toBeInTheDocument();
+    expect(screen.getByText("Enter the amount for conversion")).toBeInTheDocument();
   });
 });

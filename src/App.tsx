@@ -24,8 +24,8 @@ export default function App() {
 
   const fromCurrency = getCurrency(from);
   const toCurrency = getCurrency(to);
-  const numericAmount = parseAmount(amount);
-  const amountInvalid = !isValidAmount(amount) && amount !== "";
+  const amountInvalid = !isValidAmount(amount);
+  const numericAmount = amountInvalid ? NaN : parseAmount(amount);
 
   return (
     <main className="app">

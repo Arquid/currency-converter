@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import type { Currency } from '../types';
 
 interface Props {
@@ -8,10 +9,13 @@ interface Props {
 }
 
 export function CurrencySelect({ value, onChange, label, currencies}: Props) {
+  const id = useId();
+
   return (
     <div className='select-wrapper'>
-      <label className='field-label' htmlFor={`select-${label}`}>{label}</label>
+      <label className='field-label' htmlFor={id}>{label}</label>
       <select
+        id={id}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className='currency-select'

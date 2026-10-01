@@ -22,6 +22,14 @@ describe("readStateFromUrl", () => {
     expect(readStateFromUrl("?amount=not-a-number")).toEqual({});
   });
 
+  it("omits an amount with trailing text (regression: ?amount=12abc was accepted)", () => {
+    expect(readStateFromUrl("?amount=12abc")).toEqual({});
+  });
+
+  it("accepts a space as the thousands separator (+ is a space in a query string)", () => {
+    expect(readStateFromUrl("?amount=1+000")).toEqual({ amount: "1 000" });
+  });
+
   it("omits a negative amount", () => {
     expect(readStateFromUrl("?amount=-5")).toEqual({});
   });

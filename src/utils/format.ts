@@ -10,11 +10,12 @@ export function formatCurrency(value: number, currencyCode: string): string {
 }
 
 export function parseAmount(raw: string): number {
-  return parseFloat(raw.replace(',', '.'));
+  const s = raw.replace(/\s/g, '');
+  if (!/^(\d+([.,]\d*)?|[.,]\d+)$/.test(s)) return NaN;
+  const n = Number(s.replace(',', '.'));
+  return Number.isFinite(n) ? n : NaN;
 }
 
 export function isValidAmount(raw: string): boolean {
-  if (raw.trim() === '') return true;
-  const n = parseFloat(raw.replace(',', '.'));
-  return !isNaN(n) && n >= 0;
+  return raw.trim() === '' || !Number.isNaN(parseAmount(raw));
 }
