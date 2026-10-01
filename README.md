@@ -24,8 +24,8 @@ The current amount and currency pair are always reflected in the URL, so you can
 /?amount=250&from=USD&to=JPY
 ```
 
-- `amount`: a non-negative number, with a dot or a comma as the decimal separator
-- `from`, `to`: one of the supported currency codes listed above
+- `amount`: a non-negative number, with a dot or a comma as the decimal separator (thousands separators are not supported, see [Known Limitations](#known-limitations))
+- `from`, `to`: one of the supported currency codes listed above, in uppercase (for example `USD`; `usd` is ignored)
 
 Each missing or invalid parameter falls back to its default (`100`, `EUR` and `USD`).
 
@@ -38,6 +38,8 @@ Each missing or invalid parameter falls back to its default (`100`, `EUR` and `U
 - [Vitest](https://vitest.dev/) + [Testing Library](https://testing-library.com/) — tests
 
 ## Project Structure
+
+Abridged: configuration files, `src/main.tsx` and `src/index.css` are not listed.
 
 ```
 .github/workflows/ci.yml      # CI: type check + tests
@@ -113,7 +115,7 @@ The dev server proxies `/api` requests to the Frankfurter API (see `server.proxy
 npm test
 ```
 
-Runs the test suite (Vitest with jsdom) once. It covers the API client, the hooks, the formatting and URL helpers, and the components. Visual and CSS behavior is not covered by automated tests.
+Runs the test suite (Vitest with jsdom) once. It covers the API client, the hooks, the formatting and URL helpers, and most of the components. The error boundary and visual/CSS behavior are not covered by automated tests.
 
 To run the tests in watch mode, use `npx vitest`.
 
@@ -134,6 +136,13 @@ When you deploy, make your host forward `/api/*` to the Frankfurter API, so that
 - **`Port 5173 is in use, trying another one...`**: Vite picks the next free port and prints it. To choose one yourself, run `npm run dev -- --port 3000`.
 - **`EBADENGINE` warnings during install, or the dev server fails to start**: check `node -v` against the prerequisites above.
 - **`Could not connect. Check your internet connection and try again.`**: the Frankfurter API is not reachable. Check your network connection and click **Try again**.
+
+## Known Limitations
+
+- **Amount format**: only a plain number is understood, with a dot or a comma as the decimal separator. Group separators are not rejected, they are misread: `1 000`, `1,000.50` and `1.000,50` are all read as `1`, and `12abc` is read as `12`. Type `1000` or `1000.50` instead. A negative amount shows the validation error but is still converted.
+- **Number format**: amounts and currency symbols are always formatted with the Finnish (`fi-FI`) locale, whatever the browser language is. For example `114,48 $` and `100,00 INR`.
+- **Rate precision**: the rate line shows four decimals, so a small rate is rounded coarsely (`1 JPY = 0.0056 EUR`), while the converted amount is calculated from the exact rate.
+- **Slow API**: requests have no timeout. If the API never answers, the app stays on `Fetching currency...` until you reload the page.
 
 ## License
 
