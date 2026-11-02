@@ -68,6 +68,13 @@ body {
   font-weight: 500;
   letter-spacing: -0.02em;
   line-height: 1.2;
+  margin-block: 32px;
+}
+
+@media (max-width: 1024px) {
+  .app-title {
+    margin-block: 20px;
+  }
 }
 
 .card {
