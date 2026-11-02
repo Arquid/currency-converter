@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, afterEach } from "vitest";
+import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { fetchExchangeRate, fetchExchangeRateHistory } from "./api";
 
 describe("fetchExchangeRate", () => {
@@ -128,5 +128,72 @@ describe("fetchExchangeRateHistory", () => {
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network down")));
 
     await expect(fetchExchangeRateHistory("EUR", "USD")).rejects.toThrow(/check your internet connection/i);
+  });
+});
+
+describe("API base URL", () => {
+  beforeEach(() => {
+    vi.resetModules();
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+  });
+
+  function stubFetch(body: unknown) {
+    const fetchSpy = vi.fn().mockResolvedValue({ ok: true, json: async () => body } as Response);
+    vi.stubGlobal("fetch", fetchSpy);
+    return fetchSpy;
+  }
+
+  const latestBody = { amount: 1, base: "EUR", date: "2026-01-01", rates: { USD: 1.1 } };
+
+  it("uses the /api proxy path when VITE_API_BASE_URL is empty", async () => {
+    vi.stubEnv("VITE_API_BASE_URL", "");
+    const fetchSpy = stubFetch(latestBody);
+    const { fetchExchangeRate } = await import("./api");
+
+    await fetchExchangeRate("EUR", "USD");
+
+    expect(fetchSpy).toHaveBeenCalledWith("/api/latest?from=EUR&to=USD");
+  });
+
+  it("uses VITE_API_BASE_URL when it is set", async () => {
+    vi.stubEnv("VITE_API_BASE_URL", "https://api.frankfurter.dev/v1");
+    const fetchSpy = stubFetch(latestBody);
+    const { fetchExchangeRate } = await import("./api");
+
+    await fetchExchangeRate("EUR", "USD");
+
+    expect(fetchSpy).toHaveBeenCalledWith("https://api.frankfurter.dev/v1/latest?from=EUR&to=USD");
+  });
+
+  it("ignores trailing slashes in VITE_API_BASE_URL instead of producing a double slash", async () => {
+    vi.stubEnv("VITE_API_BASE_URL", "https://api.frankfurter.dev/v1/");
+    const fetchSpy = stubFetch(latestBody);
+    const { fetchExchangeRate } = await import("./api");
+
+    await fetchExchangeRate("EUR", "USD");
+
+    expect(fetchSpy).toHaveBeenCalledWith("https://api.frankfurter.dev/v1/latest?from=EUR&to=USD");
+  });
+
+  it("uses VITE_API_BASE_URL for the rate history request too", async () => {
+    vi.stubEnv("VITE_API_BASE_URL", "https://api.frankfurter.dev/v1");
+    const fetchSpy = stubFetch({
+      amount: 1,
+      base: "EUR",
+      start_date: "2026-01-01",
+      end_date: "2026-01-02",
+      rates: { "2026-01-01": { USD: 1.1 } },
+    });
+    const { fetchExchangeRateHistory } = await import("./api");
+
+    await fetchExchangeRateHistory("EUR", "USD");
+
+    expect(fetchSpy).toHaveBeenCalledWith(
+      expect.stringMatching(/^https:\/\/api\.frankfurter\.dev\/v1\/\d{4}-\d{2}-\d{2}\.\.\d{4}-\d{2}-\d{2}\?from=EUR&to=USD$/)
+    );
   });
 });

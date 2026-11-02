@@ -8,11 +8,11 @@ export default defineConfig({
   server: {
     proxy: {
       "/api": {
-        target: "https://api.frankfurter.app",
+        target: "https://api.frankfurter.dev",
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, "")
-      }
-    }
+        rewrite: (path) => path.replace(/^\/api/, "/v1"),
+      },
+    },
   },
   test: {
     environment: 'jsdom',

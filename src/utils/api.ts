@@ -1,6 +1,7 @@
 import type { ExchangeRateResponse, ExchangeRateHistoryResponse, RateHistoryPoint } from "../types";
 
-const BASE_URL = "/api";
+const configuredBaseUrl: string | undefined = import.meta.env.VITE_API_BASE_URL;
+const BASE_URL = (configuredBaseUrl || "/api").replace(/\/+$/, "");
 
 export async function fetchExchangeRate(
   from: string,

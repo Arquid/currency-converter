@@ -123,9 +123,11 @@ Tests also run automatically in CI on every push and pull request to `main`.
 
 ## Deployment
 
-The app requests rates from relative `/api/...` URLs. In development (`npm run dev`) and in `npm run preview`, Vite proxies `/api` to the Frankfurter API. A static host that only serves the contents of `dist/` has no such proxy, so rate requests would fail with a 404.
+The API address is set by the `VITE_API_BASE_URL` environment variable. When it is not set, the app requests rates from relative `/api/...` URLs, which Vite proxies to the Frankfurter API in development (`npm run dev`).
 
-When you deploy, make your host forward `/api/*` to the Frankfurter API, so that `/api/<path>` maps to `https://api.frankfurter.dev/v1/<path>`. For example, a Netlify `_redirects` rule:
+`.env.production` sets `VITE_API_BASE_URL=https://api.frankfurter.dev/v1`, so `npm run build` produces a build that calls the Frankfurter API directly. The API allows cross-origin requests, so the contents of `dist/` work on any static host, with no proxy or rewrite rules.
+
+To route the requests through your own host instead, build with `VITE_API_BASE_URL=/api` (a variable set in the shell takes priority over `.env.production`) and make the host forward `/api/*` to the Frankfurter API, so that `/api/<path>` maps to `https://api.frankfurter.dev/v1/<path>`. For example, a Netlify `_redirects` rule:
 
 ```
 /api/*  https://api.frankfurter.dev/v1/:splat  200
