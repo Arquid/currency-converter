@@ -75,4 +75,40 @@ describe("useExchangeRate", () => {
     expect(result.current.error).toBe("boom");
     expect(result.current.rate).toBeNull();
   });
+
+  it("cancels the previous request when the currency pair changes", () => {
+    const signals: AbortSignal[] = [];
+    mockedFetchExchangeRate.mockImplementation((_from, _to, options) => {
+      signals.push(options!.signal!);
+      return new Promise(() => {});
+    });
+
+    const { rerender } = renderHook(
+      ({ from, to }) => useExchangeRate(from, to),
+      { initialProps: { from: "EUR", to: "USD" } }
+    );
+    expect(signals).toHaveLength(1);
+    expect(signals[0].aborted).toBe(false);
+
+    rerender({ from: "EUR", to: "GBP" });
+
+    expect(signals).toHaveLength(2);
+    expect(signals[0].aborted).toBe(true);
+    expect(signals[1].aborted).toBe(false);
+  });
+
+  it("cancels the request when the component unmounts", () => {
+    const signals: AbortSignal[] = [];
+    mockedFetchExchangeRate.mockImplementation((_from, _to, options) => {
+      signals.push(options!.signal!);
+      return new Promise(() => {});
+    });
+
+    const { unmount } = renderHook(() => useExchangeRate("EUR", "USD"));
+    expect(signals[0].aborted).toBe(false);
+
+    unmount();
+
+    expect(signals[0].aborted).toBe(true);
+  });
 });

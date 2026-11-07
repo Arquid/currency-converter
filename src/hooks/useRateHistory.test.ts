@@ -74,4 +74,40 @@ describe("useRateHistory", () => {
     await waitFor(() => expect(result.current.status).toBe("error"));
     expect(result.current.points).toEqual([]);
   });
+
+  it("cancels the previous request when the currency pair changes", () => {
+    const signals: AbortSignal[] = [];
+    mockedFetchExchangeRateHistory.mockImplementation((_from, _to, options) => {
+      signals.push(options!.signal!);
+      return new Promise(() => {});
+    });
+
+    const { rerender } = renderHook(
+      ({ from, to }) => useRateHistory(from, to),
+      { initialProps: { from: "EUR", to: "USD" } }
+    );
+    expect(signals).toHaveLength(1);
+    expect(signals[0].aborted).toBe(false);
+
+    rerender({ from: "EUR", to: "GBP" });
+
+    expect(signals).toHaveLength(2);
+    expect(signals[0].aborted).toBe(true);
+    expect(signals[1].aborted).toBe(false);
+  });
+
+  it("cancels the request when the component unmounts", () => {
+    const signals: AbortSignal[] = [];
+    mockedFetchExchangeRateHistory.mockImplementation((_from, _to, options) => {
+      signals.push(options!.signal!);
+      return new Promise(() => {});
+    });
+
+    const { unmount } = renderHook(() => useRateHistory("EUR", "USD"));
+    expect(signals[0].aborted).toBe(false);
+
+    unmount();
+
+    expect(signals[0].aborted).toBe(true);
+  });
 });

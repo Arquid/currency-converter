@@ -19,8 +19,9 @@ export function useRateHistory(from: string, to: string): HistoryState {
 
   useEffect(() => {
     let isMounted = true;
+    const controller = new AbortController();
 
-    fetchExchangeRateHistory(from, to)
+    fetchExchangeRateHistory(from, to, { signal: controller.signal })
       .then((points) => {
         if (isMounted) setState({ points, status: "success" });
       })
@@ -30,6 +31,7 @@ export function useRateHistory(from: string, to: string): HistoryState {
 
     return () => {
       isMounted = false;
+      controller.abort();
     };
   }, [from, to]);
 

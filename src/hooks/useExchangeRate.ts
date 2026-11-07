@@ -18,6 +18,7 @@ export function useExchangeRate(
 
   useEffect(() => {
     let isMounted = true;
+    const controller = new AbortController();
     const pair = `${from}-${to}`;
     const isSamePair = loadedPairRef.current === pair;
 
@@ -27,7 +28,7 @@ export function useExchangeRate(
       setState({ rate: null, status: "loading", error: null, updatedAt: null });
     }
 
-    fetchExchangeRate(from, to)
+    fetchExchangeRate(from, to, { signal: controller.signal })
       .then((rate) => {
         if (isMounted) {
           loadedPairRef.current = pair;
@@ -55,6 +56,7 @@ export function useExchangeRate(
 
     return () => {
       isMounted = false;
+      controller.abort();
     };
   }, [from, to, trigger]);
 

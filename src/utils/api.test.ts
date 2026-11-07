@@ -1,6 +1,9 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { fetchExchangeRate, fetchExchangeRateHistory } from "./api";
 
+// fetch is now called with a second argument that carries the abort signal.
+const withSignal = expect.objectContaining({ signal: expect.any(AbortSignal) });
+
 describe("fetchExchangeRate", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
@@ -87,7 +90,8 @@ describe("fetchExchangeRateHistory", () => {
     const points = await fetchExchangeRateHistory("EUR", "USD");
 
     expect(fetchSpy).toHaveBeenCalledWith(
-      expect.stringMatching(/^\/api\/\d{4}-\d{2}-\d{2}\.\.\d{4}-\d{2}-\d{2}\?from=EUR&to=USD$/)
+      expect.stringMatching(/^\/api\/\d{4}-\d{2}-\d{2}\.\.\d{4}-\d{2}-\d{2}\?from=EUR&to=USD$/),
+      withSignal
     );
     expect(points).toEqual([
       { date: "2026-06-20", rate: 1.1 },
@@ -156,7 +160,7 @@ describe("API base URL", () => {
 
     await fetchExchangeRate("EUR", "USD");
 
-    expect(fetchSpy).toHaveBeenCalledWith("/api/latest?from=EUR&to=USD");
+    expect(fetchSpy).toHaveBeenCalledWith("/api/latest?from=EUR&to=USD", withSignal);
   });
 
   it("uses VITE_API_BASE_URL when it is set", async () => {
@@ -166,7 +170,7 @@ describe("API base URL", () => {
 
     await fetchExchangeRate("EUR", "USD");
 
-    expect(fetchSpy).toHaveBeenCalledWith("https://api.frankfurter.dev/v1/latest?from=EUR&to=USD");
+    expect(fetchSpy).toHaveBeenCalledWith("https://api.frankfurter.dev/v1/latest?from=EUR&to=USD", withSignal);
   });
 
   it("ignores trailing slashes in VITE_API_BASE_URL instead of producing a double slash", async () => {
@@ -176,7 +180,7 @@ describe("API base URL", () => {
 
     await fetchExchangeRate("EUR", "USD");
 
-    expect(fetchSpy).toHaveBeenCalledWith("https://api.frankfurter.dev/v1/latest?from=EUR&to=USD");
+    expect(fetchSpy).toHaveBeenCalledWith("https://api.frankfurter.dev/v1/latest?from=EUR&to=USD", withSignal);
   });
 
   it("uses VITE_API_BASE_URL for the rate history request too", async () => {
@@ -193,7 +197,106 @@ describe("API base URL", () => {
     await fetchExchangeRateHistory("EUR", "USD");
 
     expect(fetchSpy).toHaveBeenCalledWith(
-      expect.stringMatching(/^https:\/\/api\.frankfurter\.dev\/v1\/\d{4}-\d{2}-\d{2}\.\.\d{4}-\d{2}-\d{2}\?from=EUR&to=USD$/)
+      expect.stringMatching(/^https:\/\/api\.frankfurter\.dev\/v1\/\d{4}-\d{2}-\d{2}\.\.\d{4}-\d{2}-\d{2}\?from=EUR&to=USD$/),
+      withSignal
     );
+  });
+});
+
+describe("request timeout and cancellation", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  // A fetch that never answers but rejects when its signal is aborted (also when
+  // the signal is already aborted at the time of the call), like the real one.
+  function stubHangingFetch() {
+    const fetchSpy = vi.fn(
+      (_url: string, init?: RequestInit) =>
+        new Promise<Response>((_resolve, reject) => {
+          const abort = () => reject(new DOMException("The operation was aborted.", "AbortError"));
+          if (init?.signal?.aborted) abort();
+          init?.signal?.addEventListener("abort", abort);
+        })
+    );
+    vi.stubGlobal("fetch", fetchSpy);
+    return fetchSpy;
+  }
+
+  it("gives up with a friendly message when the API does not answer in 10 seconds", async () => {
+    stubHangingFetch();
+
+    const assertion = expect(fetchExchangeRate("EUR", "USD")).rejects.toThrow(/did not respond in time/i);
+    await vi.advanceTimersByTimeAsync(10_000);
+
+    await assertion;
+  });
+
+  it("does not give up before the 10 seconds are over", async () => {
+    stubHangingFetch();
+    let settled = false;
+    const pending = fetchExchangeRate("EUR", "USD")
+      .catch(() => {})
+      .finally(() => {
+        settled = true;
+      });
+
+    await vi.advanceTimersByTimeAsync(9_999);
+    expect(settled).toBe(false);
+
+    await vi.advanceTimersByTimeAsync(1);
+    await pending;
+    expect(settled).toBe(true);
+  });
+
+  it("times out the rate history request too", async () => {
+    stubHangingFetch();
+
+    const assertion = expect(fetchExchangeRateHistory("EUR", "USD")).rejects.toThrow(/did not respond in time/i);
+    await vi.advanceTimersByTimeAsync(10_000);
+
+    await assertion;
+  });
+
+  it("rejects with the original AbortError, not a user-facing message, when the caller cancels", async () => {
+    stubHangingFetch();
+    const controller = new AbortController();
+
+    const assertion = expect(
+      fetchExchangeRate("EUR", "USD", { signal: controller.signal })
+    ).rejects.toMatchObject({ name: "AbortError" });
+    controller.abort();
+
+    await assertion;
+  });
+
+  it("rejects straight away when the signal is already aborted", async () => {
+    const fetchSpy = stubHangingFetch();
+    const controller = new AbortController();
+    controller.abort();
+
+    await expect(
+      fetchExchangeRateHistory("EUR", "USD", { signal: controller.signal })
+    ).rejects.toMatchObject({ name: "AbortError" });
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("clears its timer when the response arrives, so nothing fires later", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ amount: 1, base: "EUR", date: "2026-01-01", rates: { USD: 1.1 } }),
+      } as Response)
+    );
+
+    await fetchExchangeRate("EUR", "USD");
+
+    expect(vi.getTimerCount()).toBe(0);
   });
 });
