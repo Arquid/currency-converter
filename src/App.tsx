@@ -44,9 +44,15 @@ export default function App() {
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             placeholder="0.00"
+            aria-invalid={amountInvalid}
+            aria-describedby={amountInvalid ? "amount-error" : undefined}
             className={`amount-input${amountInvalid ? " amount-input--invalid" : ""}`}
           />
-          {amountInvalid && <p className="field-error">Please enter a valid number.</p>}
+          {amountInvalid && (
+            <p id="amount-error" className="field-error" role="alert">
+              Please enter a valid number.
+            </p>
+          )}
         </div>
 
         <div className="currency-row">

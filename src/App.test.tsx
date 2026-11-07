@@ -122,4 +122,35 @@ describe("App amount input", () => {
     expect(screen.queryByText("Please enter a valid number.")).not.toBeInTheDocument();
     expect(screen.getByText("Enter the amount for conversion")).toBeInTheDocument();
   });
+
+  it("does not mark the field as invalid while the amount is valid", async () => {
+    const amount = await renderApp();
+
+    expect(amount).toHaveAttribute("aria-invalid", "false");
+    expect(amount).not.toHaveAttribute("aria-describedby");
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("marks the field invalid and links it to the error message for assistive technology", async () => {
+    const amount = await renderApp();
+
+    fireEvent.change(amount, { target: { value: "abc" } });
+
+    const alert = screen.getByRole("alert");
+    expect(alert).toHaveTextContent("Please enter a valid number.");
+    expect(amount).toHaveAttribute("aria-invalid", "true");
+    expect(amount).toHaveAttribute("aria-describedby", alert.id);
+    expect(amount).toHaveAccessibleDescription("Please enter a valid number.");
+  });
+
+  it("removes the invalid marking again once the amount is fixed", async () => {
+    const amount = await renderApp();
+
+    fireEvent.change(amount, { target: { value: "abc" } });
+    fireEvent.change(amount, { target: { value: "50" } });
+
+    expect(amount).toHaveAttribute("aria-invalid", "false");
+    expect(amount).not.toHaveAttribute("aria-describedby");
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
 });

@@ -1,4 +1,5 @@
 import type { ConversionState, Currency, RateHistoryPoint } from "../types";
+import { useDebouncedValue } from "../hooks/useDebouncedValue";
 import { formatCurrency } from "../utils/format";
 import { RateSparkline } from "./RateSparkline";
 
@@ -12,7 +13,34 @@ interface Props {
   history: RateHistoryPoint[];
 }
 
-export function ConversionResult({ state, isRefreshing, amount, from, to, onRefresh, history }: Props) {
+// One sentence for screen readers. Errors are left out because the error box
+// announces itself with role="alert".
+function describeResult({ state, amount, from, to }: Props): string {
+  const { rate, status } = state;
+
+  if (status === "loading") return "Fetching exchange rate...";
+  if (status === "error") return "";
+  if (rate === null || isNaN(amount)) return "Enter the amount for conversion";
+
+  return `${formatCurrency(amount, from.code)} is ${formatCurrency(amount * rate, to.code)}. Rate: 1 ${from.code} = ${rate.toFixed(4)} ${to.code}.`;
+}
+
+export function ConversionResult(props: Props) {
+  // Typing changes the result on every keystroke, so the announcement waits
+  // until the value has settled.
+  const announcement = useDebouncedValue(describeResult(props), 700);
+
+  return (
+    <>
+      <div className="visually-hidden" role="status" aria-live="polite" aria-atomic="true">
+        {announcement}
+      </div>
+      <ResultBox {...props} />
+    </>
+  );
+}
+
+function ResultBox({ state, isRefreshing, amount, from, to, onRefresh, history }: Props) {
   const { rate, status, error, updatedAt } = state;
 
   if (status === 'loading') {
@@ -22,7 +50,7 @@ export function ConversionResult({ state, isRefreshing, amount, from, to, onRefr
   if (status === "error") {
     return (
       <div className="result-box result-box--error">
-        <p className="result-error">⚠ {error}</p>
+        <p className="result-error" role="alert">⚠ {error}</p>
         <button className="refresh-btn" onClick={onRefresh}>Try again</button>
       </div>
     );

@@ -13,6 +13,7 @@ A currency converter built with Vite, React and TypeScript. Exchange rates come 
 - Shareable links: the amount and currency pair are kept in the URL
 - Input validation with error messages
 - Manual rate refresh
+- Accessible markup: labelled fields, and results and errors are announced through ARIA live regions
 - Dark mode support
 - Fully typed with TypeScript
 
@@ -138,13 +139,13 @@ To route the requests through your own host instead, build with `VITE_API_BASE_U
 - **`Port 5173 is in use, trying another one...`**: Vite picks the next free port and prints it. To choose one yourself, run `npm run dev -- --port 3000`.
 - **`EBADENGINE` warnings during install, or the dev server fails to start**: check `node -v` against the prerequisites above.
 - **`Could not connect. Check your internet connection and try again.`**: the Frankfurter API is not reachable. Check your network connection and click **Try again**.
+- **`The exchange rate service did not respond in time. Please try again.`**: the API did not answer within 10 seconds. Click **Try again**.
 
 ## Known Limitations
 
 - **Amount format**: only a plain number is accepted. Grouped numbers with commas or dots, such as `1,000.50` or `1.000,50`, are rejected instead of guessed, because their meaning is ambiguous. Type `1000.50` instead. Other input, such as `12abc`, `1e3` or a negative number, also shows the validation error and no conversion.
 - **Number format**: amounts and currency symbols are always formatted with the Finnish (`fi-FI`) locale, whatever the browser language is. For example `114,48 $` and `100,00 INR`.
 - **Rate precision**: the rate line shows four decimals, so a small rate is rounded coarsely (`1 JPY = 0.0056 EUR`), while the converted amount is calculated from the exact rate.
-- **Slow API**: requests have no timeout. If the API never answers, the app stays on `Fetching currency...` until you reload the page.
 
 ## License
 
