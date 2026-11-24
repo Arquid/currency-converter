@@ -154,3 +154,44 @@ describe("App amount input", () => {
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 });
+
+describe("App swap button", () => {
+  beforeEach(() => {
+    vi.resetModules();
+    window.history.replaceState(null, "", "/?amount=100&from=EUR&to=USD");
+  });
+
+  async function renderApp() {
+    const { default: App } = await import("./App");
+    render(<App />);
+    return {
+      from: screen.getByLabelText("Starting currency"),
+      to: screen.getByLabelText("Target currency"),
+      swap: screen.getByRole("button", { name: "Swap currencies" }),
+    };
+  }
+
+  it("swaps the starting and the target currency and keeps the URL in sync", async () => {
+    const { from, to, swap } = await renderApp();
+
+    fireEvent.click(swap);
+
+    expect(from).toHaveValue("USD");
+    expect(to).toHaveValue("EUR");
+    await vi.waitFor(() => {
+      const params = new URLSearchParams(window.location.search);
+      expect(params.get("from")).toBe("USD");
+      expect(params.get("to")).toBe("EUR");
+    });
+  });
+
+  it("restores the original pair when swapped twice", async () => {
+    const { from, to, swap } = await renderApp();
+
+    fireEvent.click(swap);
+    fireEvent.click(swap);
+
+    expect(from).toHaveValue("EUR");
+    expect(to).toHaveValue("USD");
+  });
+});

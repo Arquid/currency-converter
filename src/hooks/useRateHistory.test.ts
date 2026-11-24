@@ -110,4 +110,47 @@ describe("useRateHistory", () => {
 
     expect(signals[0].aborted).toBe(true);
   });
+
+  it("ignores a late answer for the previous pair after the pair has changed (race)", async () => {
+    let resolveFirst!: (points: RateHistoryPoint[]) => void;
+    let resolveSecond!: (points: RateHistoryPoint[]) => void;
+    mockedFetchExchangeRateHistory
+      .mockImplementationOnce(() => new Promise((resolve) => { resolveFirst = resolve; }))
+      .mockImplementationOnce(() => new Promise((resolve) => { resolveSecond = resolve; }));
+
+    const { result, rerender } = renderHook(
+      ({ from, to }) => useRateHistory(from, to),
+      { initialProps: { from: "EUR", to: "USD" } }
+    );
+    rerender({ from: "EUR", to: "GBP" });
+
+    // The slow EUR/USD history arrives after the user has moved on to EUR/GBP.
+    await act(async () => resolveFirst([{ date: "2026-01-01", rate: 9.99 }]));
+    expect(result.current.points).toEqual([]);
+    expect(result.current.status).toBe("loading");
+
+    const gbpPoints: RateHistoryPoint[] = [{ date: "2026-01-01", rate: 0.85 }];
+    await act(async () => resolveSecond(gbpPoints));
+    await waitFor(() => expect(result.current.points).toEqual(gbpPoints));
+  });
+
+  it("ignores a late failure of the previous pair after the pair has changed (race)", async () => {
+    let rejectFirst!: (error: Error) => void;
+    let resolveSecond!: (points: RateHistoryPoint[]) => void;
+    mockedFetchExchangeRateHistory
+      .mockImplementationOnce(() => new Promise((_resolve, reject) => { rejectFirst = reject; }))
+      .mockImplementationOnce(() => new Promise((resolve) => { resolveSecond = resolve; }));
+
+    const { result, rerender } = renderHook(
+      ({ from, to }) => useRateHistory(from, to),
+      { initialProps: { from: "EUR", to: "USD" } }
+    );
+    rerender({ from: "EUR", to: "GBP" });
+
+    await act(async () => rejectFirst(new Error("old failure")));
+    expect(result.current.status).toBe("loading");
+
+    await act(async () => resolveSecond([{ date: "2026-01-01", rate: 0.85 }]));
+    await waitFor(() => expect(result.current.status).toBe("success"));
+  });
 });

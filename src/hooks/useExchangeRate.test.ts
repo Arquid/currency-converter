@@ -111,4 +111,56 @@ describe("useExchangeRate", () => {
 
     expect(signals[0].aborted).toBe(true);
   });
+
+  it("ignores a late answer for the previous pair after the pair has changed (race)", async () => {
+    let resolveFirst!: (rate: number) => void;
+    let resolveSecond!: (rate: number) => void;
+    mockedFetchExchangeRate
+      .mockImplementationOnce(() => new Promise((resolve) => { resolveFirst = resolve; }))
+      .mockImplementationOnce(() => new Promise((resolve) => { resolveSecond = resolve; }));
+
+    const { result, rerender } = renderHook(
+      ({ from, to }) => useExchangeRate(from, to),
+      { initialProps: { from: "EUR", to: "USD" } }
+    );
+    rerender({ from: "EUR", to: "GBP" });
+
+    // The slow EUR/USD request answers after the user has already moved on to EUR/GBP.
+    await act(async () => resolveFirst(9.99));
+    expect(result.current.rate).toBeNull();
+    expect(result.current.status).toBe("loading");
+
+    await act(async () => resolveSecond(0.85));
+    await waitFor(() => expect(result.current.rate).toBe(0.85));
+  });
+
+  it("ignores a late failure of the previous pair after the pair has changed (race)", async () => {
+    let rejectFirst!: (error: Error) => void;
+    let resolveSecond!: (rate: number) => void;
+    mockedFetchExchangeRate
+      .mockImplementationOnce(() => new Promise((_resolve, reject) => { rejectFirst = reject; }))
+      .mockImplementationOnce(() => new Promise((resolve) => { resolveSecond = resolve; }));
+
+    const { result, rerender } = renderHook(
+      ({ from, to }) => useExchangeRate(from, to),
+      { initialProps: { from: "EUR", to: "USD" } }
+    );
+    rerender({ from: "EUR", to: "GBP" });
+
+    await act(async () => rejectFirst(new Error("old failure")));
+    expect(result.current.status).toBe("loading");
+    expect(result.current.error).toBeNull();
+
+    await act(async () => resolveSecond(0.85));
+    await waitFor(() => expect(result.current.status).toBe("success"));
+  });
+
+  it("shows a rejection that is not an Error object as text", async () => {
+    mockedFetchExchangeRate.mockRejectedValueOnce("plain text failure");
+
+    const { result } = renderHook(() => useExchangeRate("EUR", "USD"));
+
+    await waitFor(() => expect(result.current.status).toBe("error"));
+    expect(result.current.error).toBe("plain text failure");
+  });
 });

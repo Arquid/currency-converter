@@ -128,6 +128,12 @@ describe("fetchExchangeRateHistory", () => {
     await expect(fetchExchangeRateHistory("EUR", "USD")).rejects.toThrow(/currently unavailable/i);
   });
 
+  it("throws a user-friendly message on a client error", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, status: 404 } as Response));
+
+    await expect(fetchExchangeRateHistory("EUR", "USD")).rejects.toThrow(/could not fetch the rate history/i);
+  });
+
   it("throws a user-friendly message when the network request itself fails", async () => {
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network down")));
 

@@ -37,13 +37,15 @@ Each missing or invalid parameter falls back to its default (`100`, `EUR` and `U
 - [TypeScript](https://www.typescriptlang.org/) — type safety
 - [Frankfurter API](https://frankfurter.dev) — exchange rates
 - [Vitest](https://vitest.dev/) + [Testing Library](https://testing-library.com/) — tests
+- [Fontsource](https://fontsource.org/) — DM Sans and DM Mono, bundled with the app (no requests to Google Fonts)
 
 ## Project Structure
 
 Abridged: configuration files, `src/main.tsx` and `src/index.css` are not listed.
 
 ```
-.github/workflows/ci.yml      # CI: type check + tests
+.github/workflows/ci.yml      # CI: lint, tests, build, dependency audit
+.github/dependabot.yml        # Weekly dependency update pull requests
 src/
 ├── components/
 │   ├── CurrencySelect.tsx    # Currency dropdown
@@ -116,11 +118,11 @@ The dev server proxies `/api` requests to the Frankfurter API (see `server.proxy
 npm test
 ```
 
-Runs the test suite (Vitest with jsdom) once. It covers the API client, the hooks, the formatting and URL helpers, and most of the components. The error boundary and visual/CSS behavior are not covered by automated tests.
+Runs the test suite (Vitest with jsdom) once. It covers the API client, the hooks, the formatting and URL helpers, and the components, including the error boundary. Visual and CSS behavior is not covered by automated tests.
 
 To run the tests in watch mode, use `npx vitest`.
 
-Tests also run automatically in CI on every push and pull request to `main`.
+CI runs on every push and pull request to `main`, on Node 20, 22 and 24. It runs the linter, the tests and the production build (which includes the type check), and audits the production dependencies with `npm audit --omit=dev`.
 
 ## Deployment
 
